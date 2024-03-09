@@ -33,29 +33,60 @@ def getRGBColor(page: ft.Page, lv: ft.ListView, dlg_modal: ft.AlertDialog):
         color_list.append(RGB)
         refresh(page, lv, dlg_modal)
 
-# アプリケーションの強制終了
-def destroy_app(page: ft.Page):
-    page.window_destroy()
-
 # 自動ペイント
 paint_page = 1
+try_times = 0
+total_times = 5
 
-def autoPaint():
+def autoPaint(page: ft.Page, start_icon: ft.IconButton):
+    global try_times
     if int(paint_page) == 1:
+        page_number = paint_page
         for i in processing_list:
+            if try_times > total_times:
+                try_times = 0
+                # print("プログラム強制終了_最終loop")
+                start_icon.icon = "running_with_errors"
+                start_icon.icon_color = "red"
+                page.update()
+                break
             paintProcess(i, page_number)
     else:
         for page_number in range(int(paint_page)):
+            if try_times > total_times:
+                try_times = 0
+                # print("プログラム強制終了_最終loop")
+                start_icon.icon = "running_with_errors"
+                start_icon.icon_color = "red"
+                page.update()
+                break
             for i in processing_list:
+                # 無限ループの場合のループを中止
+                if try_times > total_times:
+                    # print("プログラム強制終了_loop_list")
+                    break
                 paintProcess(i, page_number)
             pyautogui.press('>')
             pyautogui.press('enter')
             time.sleep(0.5)
+    if not start_icon.icon == "running_with_errors":
+        start_icon.icon = "published_with_changes"
+        page.update()
+
+# 強制終了関数
+# def suspend_func(page: ft.Page, start_icon: ft.IconButton, times):
+#     if times > total_times:
+#         times = 0
+#         print("プログラム強制終了_最終loop")
+#         start_icon.icon = "running_with_errors"
+#         start_icon.icon_color = "red"
+#         page.update()
+#         return
 
 # 白い場所の座標
 white_color_position = (30, 800)
 def find_color_border():
-    # try_times = 0
+    global try_times
     try:
         # color_borderの色を白にする
         pyautogui.mouseDown(white_color_position[0], white_color_position[1], button='right')
@@ -66,30 +97,41 @@ def find_color_border():
         pyautogui.click(x, y)
     except Exception:
         time.sleep(0.5)
+        # 無限ループの場合は強制終了
+        if try_times > total_times:
+            return
+        try_times += 1
         find_color_border()
-        # try_times += 1
-        # print(try_times)
-        # if try_times == 3:
-        #     pyautogui.moveTo(0, 0)
-            
 
 # 偏差量
 offset = 50
 def find_RGB_input():
+    global try_times
     try:
         RGB_input = pyautogui.locateOnScreen('./images/RGB_input.png', confidence=0.9)
         x, y = pyautogui.center(RGB_input)
         pyautogui.click(x + offset, y)
     except Exception:
         time.sleep(0.5)
+        # 無限ループの場合は強制終了
+        if try_times > total_times:
+            return
+        try_times += 1
         find_RGB_input()
 
 def paintProcess(i, page_number):
+    global try_times
+    try_times = 0
+
     # 仕上げ開始(注意：英語の入力方式に変えて)
     # pyautogui.press('f')
 
     find_color_border()
     find_RGB_input()
+
+    # 無限ループの場合は強制終了
+    if try_times > total_times:
+        return
 
     pyautogui.hotkey('ctrl', 'a')
     pyautogui.write(str(color_list[i][0]))
@@ -257,7 +299,7 @@ def main(page: ft.Page):
     page.window_width = 400  # 幅
     page.window_height = 500  # 高さ
     page.window_resizable = False  # ウィンドウサイズ変更可否
-    # page.window_always_on_top = True  # ウィンドウを最前面に固定
+    page.window_always_on_top = True  # ウィンドウを最前面に固定
     page.window_center() # ウィンドウをデスクトップの中心に移動
     # page.window_top = 0  # 位置(TOP)
     # page.window_left =1920 / 1.25 - 300  # 位置(LEFT)
@@ -287,21 +329,41 @@ def main(page: ft.Page):
 
     # ウィンドウを最前面に固定
     def desk_changed(e):
+        desk_icon.icon = (
+            "desktop_access_disabled_sharp"
+            if desk_icon.icon == "desktop_windows_sharp"
+            else "desktop_windows_sharp"
+        )
         page.window_always_on_top = (
             True
-            if page.window_always_on_top == False
+            if desk_icon.icon == "desktop_windows_sharp"
             else False
         )
-        desk_icon.icon = (
-            "desktop_windows_sharp"
-            if desk_icon.icon == "desktop_access_disabled_sharp"
-            else "desktop_access_disabled_sharp"
-        )
         page.update()
-    desk_icon = ft.IconButton(ft.icons.DESKTOP_ACCESS_DISABLED_SHARP, on_click=desk_changed)
+    desk_icon = ft.IconButton(ft.icons.DESKTOP_WINDOWS_SHARP, on_click=desk_changed)
+
+    # 自動ペイントスタート
+    def start_paint(e):
+        start_icon.icon = (
+            "adb"
+            if start_icon.icon == "auto_mode"
+            else "auto_mode"
+        )
+        start_icon.icon_color = (
+            "green"
+            if start_icon.icon == "adb"
+            else None
+        )
+        if start_icon.icon == "running_with_errors" or start_icon.icon == "published_with_changes":
+            start_icon.icon = "auto_mode"
+        page.update()
+        if start_icon.icon == "adb":
+            autoPaint(page, start_icon)
+    # icons.CANCEL_SCHEDULE_SEND
+    start_icon = ft.IconButton(ft.icons.AUTO_MODE, on_click=start_paint)
 
     control_icons = ft.Row([
-        theme_icon, desk_icon
+        theme_icon, desk_icon, start_icon
     ], alignment=ft.MainAxisAlignment.CENTER)
 
     def textbox_change(e):
@@ -355,20 +417,20 @@ def main(page: ft.Page):
 
     while True:
         # suppress=True を設置することで、パソコンデフォルトのHotkeyの抑制可能
-        # keyboard.add_hotkey("f1", getMousePoint, args=[page, lv], suppress=True)
-        # keyboard.add_hotkey("f2", getRGBColor, args=[page, lv], suppress=True)
-        # keyboard.add_hotkey("home", autoPaint, suppress=True)
+        keyboard.add_hotkey("f1", getMousePoint, args=[page, lv, dlg_modal], suppress=True)
+        keyboard.add_hotkey("f2", getRGBColor, args=[page, lv, dlg_modal], suppress=True)
         # # keyboard.add_hotkey("end", destroy_app, args=[page], suppress=True)
-        # keyboard.wait()
+        keyboard.wait()
+
         # if keyboard.read_key(suppress=True) == "f1":
         #     getMousePoint(page, lv)
-        event = keyboard.read_event()
-        if event.name == 'f1':
-            getMousePoint(page, lv, dlg_modal)
-        if event.name == 'f2':
-            getRGBColor(page, lv, dlg_modal)
-        if keyboard.read_event().event_type == keyboard.KEY_UP and event.name == 'home':
-            autoPaint()
+        # event = keyboard.read_event()
+        # if event.name == 'f1':
+        #     getMousePoint(page, lv, dlg_modal)
+        # if event.name == 'f2':
+        #     getRGBColor(page, lv, dlg_modal)
+        # if event.name == 'end':
+        #     page.window_destroy()
         # print(event)
 
 ft.app(target=main)
