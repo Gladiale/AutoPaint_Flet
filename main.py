@@ -142,6 +142,7 @@ def paintProcess(i, page_number):
     pyautogui.press('enter')
 
     time.sleep(0.3)
+    # ここは［フィル］のショットカットキー
     pyautogui.press('f')
     # ページごとに偏移量を付ける
     if i in deviation_data.keys():
@@ -419,7 +420,6 @@ def main(page: ft.Page):
         # suppress=True を設置することで、パソコンデフォルトのHotkeyの抑制可能
         keyboard.add_hotkey("f1", getMousePoint, args=[page, lv, dlg_modal], suppress=True)
         keyboard.add_hotkey("f2", getRGBColor, args=[page, lv, dlg_modal], suppress=True)
-        # # keyboard.add_hotkey("end", destroy_app, args=[page], suppress=True)
         keyboard.wait()
 
         # if keyboard.read_key(suppress=True) == "f1":
