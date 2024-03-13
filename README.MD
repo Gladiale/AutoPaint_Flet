@@ -16,3 +16,5 @@ pip install keyboard
 pip install pynput
 pip install pyautogui
 ```
+
+[演示動画 - Youtube](https://www.youtube.com/watch?v=HClUu8zqUmY)
